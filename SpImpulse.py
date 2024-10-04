@@ -2,6 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from labellines import labelLines
 
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif"
+})
+
 plt.clf()
 plt.title("Performance of Various Fuels at T/W ratio 1")
 x = np.linspace(2500, 8000, 500)
@@ -23,14 +29,14 @@ for i in range(len(atoms)):
     #     #y = np.sqrt((2*1.4*8.134*x)/((1.4 - 1)*atoms[i]*10**-3))*(1/9.81)*1.5
     #     print("test")
     #else:
-    print(i)
+    #print(i)
     y = np.sqrt((2*1.4*8.134*x)/((1.4 - 1)*atoms[i]*10**-3))*(1/9.81) 
-    print(y)           
-    line, = plt.plot(x, y, label= names[i])
+    #print(y)           
+    line, = plt.plot(x, y, label= names[i], linewidth=0.5)
     lines.append(line)
     
 y = 0*x + 450;
-line, = plt.plot(x, y, label= 'Chemical Propulsion Limit', linestyle = 'dashed')
+line, = plt.plot(x, y, label= 'Chemical Propulsion Limit', linestyle = 'dashed', linewidth=0.5)
 lines.append(line)
 labelLines(lines, zorder=2.5)
 
