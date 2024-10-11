@@ -2,7 +2,7 @@
 This project aims to establish the feasibility of solar thermal propulsion for interplanetary and cislunar transport. 
 
 The main performance goals are:
-* Moderately high specific impulse with storable propellants (1000s with NH_3)
+* Moderately high specific impulse with storable propellants (1000s with NH~3)
 * Comparable weight to hypergolic rocket engines of the same thrust
 * Simple fibre optic based inflatable reflectors that can capture up to 1 MW of thermal radiation
 * Extremely high specific impulse with LH2 in the range of 2000s.
