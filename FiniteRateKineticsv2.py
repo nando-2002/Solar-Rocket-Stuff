@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-#import pandas as pd
+import pandas as pd
+import scipy as sp
 
 #my favourite font for matplotlib
 plt.rcParams.update({
@@ -49,6 +50,38 @@ def machnumbers ():
             actualM[i] = 0.5*(actualM[i - 1] + actualM[i + 1])
     
     return actualM
+
+#import the values for the equilibrium constant vs temperature for 0.5H2 -> H.
+#NIST JANAF uses log base 10 and its for 1 mol of H. This is why it must be squared
+
+hydrogendata = pd.read_excel(
+    'HydrogenAtom.xlsx', usecols='A, H', skiprows = range(3))
+
+hydrogendata_array = hydrogendata.to_numpy()
+removelog = (10**hydrogendata_array[:,1])**2
+# print(hydrogendata_array[:,1])
+
+def logdata_H():
+    plt.figure()
+    plt.grid('on')
+    plt.title("$log_{10}(K_p)$ for $H_2 \leftrightarrow 2H$")
+    plt.plot(hydrogendata_array[:,0], hydrogendata_array[:,1], linewidth = 0.75)
+
+def normdata_H():
+    plt.figure()
+    plt.grid('on')
+    plt.title("$K_p$ for $H_2 \leftrightarrow 2H$")
+    plt.plot(hydrogendata_array[:,0], removelog, linewidth = 0.75)
+    
+def plotPvT(pres, temp, title):
+    plt.figure()
+    plt.gca().invert_xaxis()
+    plt.xticks(np.linspace(300, 3500, 33))
+    plt.xlim(3500, 300)
+    #plt.yticks(np.linspace(0, 20, 21))
+    plt.grid('on')
+    plt.title(title)
+    plt.plot(temp, pres, linewidth = 0.75)
     
 
 #creating the nozzle profile from Krieger 1951
@@ -73,6 +106,33 @@ M = machnumbers()
 Po, To, P, T = 20, 3500, np.zeros(x.size), np.zeros(x.size)
 P = Po * (1 + (gam - 1)/2 * M**2)**((-gam)/(gam - 1))
 T = To * (1 + (gam - 1)/2 * M**2)**(-1)
-#plt.plot(x[:], T[:])
+vel = M * np.sqrt(gam * (8.314/(1.89*10**-3)) * T)
+
+#plt.plot(x[:], vel[:])
 
 #from here, the chemical kinetic solution can begin
+
+#input the chamber conditions computed from equilibrium calcs
+nH = np.zeros(x.size); nH[0] = 0.1235; nH[1] = 0.12 #mole fraction also so that derivative doesn't go crazy
+dnH = np.zeros(x.size)
+
+#Po, P, To, T, and vel are required. Additionally, Cp and R (specific) are needed 
+Cp = 33.43/(2*10**(-3)) #(per mass, not mol)
+R = 8.314/(1.89*10**-3)
+
+for i in range (x.size - 1):
+    diffT = T[i]%100
+    if (diffT > 50):
+        correcT = T[i] + (100 - diffT)
+    else:
+        correcT = T[i] - diffT
+    indexT = correcT/100 + 2
+    indexReal = (int(indexT))
+    Kp = 1/removelog[indexReal] #nearest value of Kp in the table
+    
+    #computing from krieger's formula for dnH/dx
+    
+    dnH[i] = ( (10**15 * (2 - nH[i]))/(vel[i] * (R * T[i])**2) )*( (nH[i]*P[i])**2 - ((1 - nH[i]) * P[i])/Kp )
+    nH[i + 1] = nH[i] - dnH[i]
+    
+plt.plot(x, nH)
