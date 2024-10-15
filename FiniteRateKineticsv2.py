@@ -1,13 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy as sp
+from scipy.signal import savgol_filter
 
 #my favourite font for matplotlib
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif"
 })
+
 
 def areaRatio (val):
     term1 = 1 / val**2
@@ -20,7 +21,7 @@ def areaRatio (val):
 def machnumbers ():
    
     subsonicM = np.linspace(0.3, 1, 1000)
-    supersonicM = np.linspace(1, 4.5, 5000)
+    supersonicM = np.linspace(1, 10, 10000)
     subratios = areaRatio(subsonicM)
     supratios = areaRatio(supersonicM)
     
@@ -39,13 +40,13 @@ def machnumbers ():
                 actualM[i] = supersonicM[j]
                 break
     
-    for i in range(165, 1001):
+    for i in range(165, x.size):
         for j in range(5000):
             if (abs(Arat[i] - supratios[j]) <= 0.01):
                 actualM[i] = supersonicM[j]
                 break
     
-    for i in range(1000):
+    for i in range(x.size - 1):
         if (actualM[i] == 0):
             actualM[i] = 0.5*(actualM[i - 1] + actualM[i + 1])
     
@@ -64,13 +65,13 @@ removelog = (10**hydrogendata_array[:,1])**2
 def logdata_H():
     plt.figure()
     plt.grid('on')
-    plt.title("$log_{10}(K_p)$ for $H_2 \leftrightarrow 2H$")
+    #plt.title("$log_{10}(K_p)$ for $H_2 \leftrightarrow 2H$")
     plt.plot(hydrogendata_array[:,0], hydrogendata_array[:,1], linewidth = 0.75)
 
 def normdata_H():
     plt.figure()
     plt.grid('on')
-    plt.title("$K_p$ for $H_2 \leftrightarrow 2H$")
+    #plt.title("$K_p$ for $H_2 \leftrightarrow 2H$")
     plt.plot(hydrogendata_array[:,0], removelog, linewidth = 0.75)
     
 def plotPvT(pres, temp, title):
@@ -86,20 +87,25 @@ def plotPvT(pres, temp, title):
 
 #creating the nozzle profile from Krieger 1951
 
-x = np.linspace(0, 10, 1001) # x axis is 100 units long
+#x = np.linspace(0, 10, 1001) # x axis is 100 units long
+x = np.arange(0, 50, 0.01)
 noz = np.zeros(x.size)
 noz[:10] = 1 #straight chamber
 noz[10:53] = np.sqrt(1 - (x[10:53] -0.1)**2) #convergent circle
 noz[53:191] = 2.707 - np.sqrt(4 - (x[53:191] - 1.393)**2) #throat and divergent circle
-noz[191:1001] = 0.26795 * x[191:1001] + 0.2635 #divergent cone
+noz[191:] = 0.26795 * x[191:] + 0.2635 #divergent cone
+
+noz = noz + 3.1
 
 #isentropic Area-Mach relations
-At = 1.5707 #actual throat area
+At = 45.5319 #1.5707 #actual throat area
 A = np.pi * noz[:]**2 
 Arat = A/At
 gam = 1.36
 
 M = machnumbers()
+M = savgol_filter(M, 100, 3)
+
 
 #defining some initial conditions
 
@@ -113,14 +119,14 @@ vel = M * np.sqrt(gam * (8.314/(1.89*10**-3)) * T)
 #from here, the chemical kinetic solution can begin
 
 #input the chamber conditions computed from equilibrium calcs
-nH = np.zeros(x.size); nH[0] = 0.1235; nH[1] = 0.12 #mole fraction also so that derivative doesn't go crazy
+nH = np.zeros(x.size); nH[:] = 0.1235; #nH[1] = 0.12 #mole fraction also so that derivative doesn't go crazy
 dnH = np.zeros(x.size)
 
 #Po, P, To, T, and vel are required. Additionally, Cp and R (specific) are needed 
 Cp = 33.43/(2*10**(-3)) #(per mass, not mol)
 R = 8.314/(1.89*10**-3)
 
-for i in range (x.size - 1):
+for i in range (x.size - 3):
     diffT = T[i]%100
     if (diffT > 50):
         correcT = T[i] + (100 - diffT)
@@ -132,7 +138,21 @@ for i in range (x.size - 1):
     
     #computing from krieger's formula for dnH/dx
     
-    dnH[i] = ( (10**15 * (2 - nH[i]))/(vel[i] * (R * T[i])**2) )*( (nH[i]*P[i])**2 - ((1 - nH[i]) * P[i])/Kp )
-    nH[i + 1] = nH[i] - dnH[i]
+    dnH[i] = ( (10**16 * (2 - nH[i]))/(vel[i] * (R * T[i])**2) )*(
+        (nH[i]*P[i])**2 - ((1 - nH[i]) * P[i])/Kp )
+    dnH[i + 1] = ( (10**16 * (2 - nH[i + 1]))/(vel[i + 1] * (R * T[i + 1])**2) )*( 
+        (nH[i + 1]*P[i + 1])**2 - ((1 - nH[i + 1]) * P[i])/Kp )
+    dnH[i + 2] = ( (10**16 * (2 - nH[i + 2]))/(vel[i + 2] * (R * T[i + 2])**2) )*( 
+        (nH[i + 2]*P[i + 2])**2 - ((1 - nH[i + 2]) * P[i])/Kp )
+    dnH[i + 3] = ( (10**16 * (2 - nH[i + 3]))/(vel[i + 3] * (R * T[i + 3])**2) )*( 
+        (nH[i + 3]*P[i + 3])**2 - ((1 - nH[i + 3]) * P[i])/Kp )
+    nH[i + 3] = nH[i]  - (3*0.01/8) * (
+        dnH[i] + 3*dnH[i + 1] + 3*dnH[i + 2] + dnH[i + 3])
     
+    '''
+    dnH[i] = ( (10**1 * (2 - nH[i]))/(vel[i] * (R * T[i])**2) )*(
+        (nH[i]*P[i])**2 - ((1 - nH[i]) * P[i])/Kp )
+    nH[i + 1] = nH[i] - dnH[i]
+    '''
+
 plt.plot(x, nH)
