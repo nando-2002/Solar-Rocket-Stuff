@@ -92,18 +92,22 @@ def plotPvT(pres, temp, title):
 #creating the nozzle profile from Krieger 1951
 
 #x = np.linspace(0, 10, 1001) # x axis is 100 units long
-x = np.arange(0, 10, 0.01)
+x = np.arange(0, 50, 0.01)
 noz = np.zeros(x.size)
-noz[:(10)] = 1 #straight chamber
+noz[:(10)] = 1  #straight chamber
 noz[(10):(53)] = np.sqrt(1 - (x[(10):(53)] -0.1)**2) #convergent circle
-noz[(53):(191)] = 2.707 - np.sqrt(4 - (x[(53):(191)] - 1.393)**2) #throat and divergent circle
-noz[(191):] = 0.26795 * x[(191):] + 0.2635 #divergent cone
+noz[(53):(191)] = ( 2.707 - np.sqrt(4 - (x[(53):(191)] - 1.393)**2) ) #throat and divergent circle
+noz[(191):] = (0.26795 * x[(191):] + 0.2635) #divergent cone
 
-noz = noz
+noz = noz + 3
 
 #isentropic Area-Mach relations
-At = 1.5707 #1.5707 #actual throat area45.5319
+#At = 45.319 #1.5707
+#At = A[139]
+#At = 26.3973
+
 A = np.pi * noz[:]**2 
+At = A[139]
 Arat = A/At
 gam = 1.36
 
@@ -113,7 +117,7 @@ M = savgol_filter(M, 100, 3)
 
 #defining some initial conditions
 
-Po, To, P, T = 20, 3500, np.zeros(x.size), np.zeros(x.size)
+Po, To, P, T = 20, 5400, np.zeros(x.size), np.zeros(x.size)
 P = Po * (1 + (gam - 1)/2 * M**2)**((-gam)/(gam - 1))
 T = To * (1 + (gam - 1)/2 * M**2)**(-1)
 vel = M * np.sqrt(gam * (8.314/(1.89*10**-3)) * T)
@@ -123,8 +127,8 @@ vel = M * np.sqrt(gam * (8.314/(1.89*10**-3)) * T)
 #from here, the chemical kinetic solution can begin
 
 #input the chamber conditions computed from equilibrium calcs
-nH = np.zeros(x.size); nH[:] = 0.1235; #nH[1:] = 0.1235 #mole fraction also so that derivative doesn't go crazy
-dnH = np.zeros(x.size)
+nH = np.zeros(x.size); nH[:] = 0.9; #nH[1:] = 0.1235 #mole fraction also so that derivative doesn't go crazy
+dnH = np.zeros(x.size); dnH[:] = 0.1;
 
 #Po, P, To, T, and vel are required. Additionally, Cp and R (specific) are needed 
 Cp = 33.43/(2*10**(-3)) #(per mass, not mol)
@@ -180,18 +184,18 @@ for i in range (x.size - 3):
     dnH[i + 3] = ( (kf * (2 - nH[i + 3]))/(vel[i + 3] * (R * T[i + 3])**2) )*( 
         (nH[i + 3]*P[i + 3])**2 - ((1 - nH[i + 3]) * P[i])/Kpr[i + 3] )
 
-    
+    #print(dnH[i])
     nH[i + 3] = nH[i]  - (3*0.01/8) * (
         dnH[i] + 3*dnH[i + 1] + 3*dnH[i + 2] + dnH[i + 3])
     
     '''
-    dnH[i] = ( (10**1 * (2 - nH[i]))/(vel[i] * (R * T[i])**2) )*(
+    dnH[i] = ( (10**15 * (2 - nH[i]))/(vel[i] * (R * T[i])**2) )*(
         (nH[i]*P[i])**2 - ((1 - nH[i]) * P[i])/Kpr[i] )
     nH[i + 1] = nH[i] - dnH[i]
     '''
 
+dnH = savgol_filter(dnH, 100, 3)
 nH = savgol_filter(nH, 100, 3)
-
 # plt.title("Kp")
 # plt.xlim(1500, 3500)
 # plt.ylim(-0.01, 0.6)
@@ -202,24 +206,26 @@ nH = savgol_filter(nH, 100, 3)
 # plt.plot(x, nH)
 
 plt.subplot(2, 2, 1)
-plt.title("\small Mole fraction of H")
-plt.plot(x, nH)
+plt.title("\small Rate of formation of $H_2$")
+plt.plot(x, dnH)
+plt.axvline(1.39, linestyle = 'dashed', color = 'black')
 
 plt.subplot(2, 2, 2)
-plt.title("\small Mach Num")
-plt.plot(x, M)
+plt.title("\small Nozzle Contour")
+plt.plot(x, noz)
 
 plt.subplot(2, 2, 3)
 # plt.title("\small Equilibrium Data")
 # plt.xlim(1500, 3500)
 # plt.ylim(-0.01, 0.3)
 # plt.plot(T, Kpr); plt.plot(hydrogendata_array[:,0], removelog); plt.plot(T, Kpr**2)
+plt.title("\small nH")
+plt.plot(x, nH)
+plt.axvline(1.39, linestyle = 'dashed', color = 'black')
 
-plt.title("\small Rate of formation of $H_2$")
-plt.plot(x, dnH)
 
 plt.subplot(2, 2, 4)
-plt.title("\small Temp")
-plt.plot(x, T)
+plt.title("\small Velocity")
+plt.plot(x, vel)
 
 # plt.title("\small Nozzle Contour")
