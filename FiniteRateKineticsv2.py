@@ -5,8 +5,7 @@ from scipy.signal import savgol_filter
 
 #my favourite font for matplotlib
 plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif"
+    "font.family": "monospace"
 })
 
 
@@ -99,7 +98,7 @@ noz[(10):(53)] = np.sqrt(1 - (x[(10):(53)] -0.1)**2) #convergent circle
 noz[(53):(191)] = ( 2.707 - np.sqrt(4 - (x[(53):(191)] - 1.393)**2) ) #throat and divergent circle
 noz[(191):] = (0.26795 * x[(191):] + 0.2635) #divergent cone
 
-noz = noz + 3
+noz = noz + 1.75
 
 #isentropic Area-Mach relations
 #At = 45.319 #1.5707
@@ -117,7 +116,7 @@ M = savgol_filter(M, 100, 3)
 
 #defining some initial conditions
 
-Po, To, P, T = 20, 5400, np.zeros(x.size), np.zeros(x.size)
+Po, To, P, T = 20, 5000, np.zeros(x.size), np.zeros(x.size)
 P = Po * (1 + (gam - 1)/2 * M**2)**((-gam)/(gam - 1))
 T = To * (1 + (gam - 1)/2 * M**2)**(-1)
 vel = M * np.sqrt(gam * (8.314/(1.89*10**-3)) * T)
@@ -127,7 +126,7 @@ vel = M * np.sqrt(gam * (8.314/(1.89*10**-3)) * T)
 #from here, the chemical kinetic solution can begin
 
 #input the chamber conditions computed from equilibrium calcs
-nH = np.zeros(x.size); nH[:] = 0.9; #nH[1:] = 0.1235 #mole fraction also so that derivative doesn't go crazy
+nH = np.zeros(x.size); nH[:] = 0.85; #nH[1:] = 0.1235 #mole fraction also so that derivative doesn't go crazy
 dnH = np.zeros(x.size); dnH[:] = 0.1;
 
 #Po, P, To, T, and vel are required. Additionally, Cp and R (specific) are needed 
@@ -205,16 +204,16 @@ nH = savgol_filter(nH, 100, 3)
 
 # plt.plot(x, nH)
 
-plt.subplot(2, 2, 1)
+plt.subplot(2, 1, 1)
 plt.title("\small Rate of formation of $H_2$")
 plt.plot(x, dnH)
 plt.axvline(1.39, linestyle = 'dashed', color = 'black')
 
-plt.subplot(2, 2, 2)
-plt.title("\small Nozzle Contour")
-plt.plot(x, noz)
+# plt.subplot(2, 2, 2)
+# plt.title("\small Nozzle Contour")
+# plt.plot(x, noz)
 
-plt.subplot(2, 2, 3)
+plt.subplot(2, 1, 2)
 # plt.title("\small Equilibrium Data")
 # plt.xlim(1500, 3500)
 # plt.ylim(-0.01, 0.3)
@@ -224,8 +223,8 @@ plt.plot(x, nH)
 plt.axvline(1.39, linestyle = 'dashed', color = 'black')
 
 
-plt.subplot(2, 2, 4)
-plt.title("\small Velocity")
-plt.plot(x, vel)
+# plt.subplot(2, 2, 4)
+# plt.title("\small Velocity")
+# plt.plot(x, vel)
 
 # plt.title("\small Nozzle Contour")
